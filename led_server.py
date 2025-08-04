@@ -56,6 +56,20 @@ class LEDController:
             if self.is_on:
                 self._update_leds()
 
+    def adjust_brightness(self, adjustment):
+        """
+        增量调节亮度
+        :param adjustment: 亮度增量，正数调亮，负数调暗
+        """
+        # 计算新的亮度值
+        new_brightness = self.current_brightness + adjustment
+        
+        # 边界处理：确保亮度在0-255范围内
+        new_brightness = max(0, min(255, new_brightness))
+        
+        # 使用现有的set_brightness方法设置新亮度
+        self.set_brightness(int(new_brightness))
+
     def _update_leds(self):
         if self.is_on:
             for i in range(self.strip.numPixels()):
@@ -94,8 +108,16 @@ def control_led():
                 color.get('b', 0)
             )
 
-        # 处理亮度控制
-        if 'brightness' in data:
+        # 处理亮度控制 - 支持绝对值和增量值
+        if 'brightness_adjust' in data:
+            # 增量亮度调节
+            try:
+                adjustment = float(data['brightness_adjust'])
+                led_controller.adjust_brightness(adjustment)
+            except (ValueError, TypeError):
+                return jsonify({'error': 'Invalid brightness_adjust value. Must be a number.'}), 400
+        elif 'brightness' in data:
+            # 绝对亮度设置（保持原有功能）
             brightness = data['brightness']
             if not 0 <= brightness <= 255:
                 return jsonify({'error': 'Invalid brightness value'}), 400
